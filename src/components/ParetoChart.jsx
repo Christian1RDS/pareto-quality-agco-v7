@@ -1,3 +1,159 @@
-import {Bar,CartesianGrid,Cell,ComposedChart,LabelList,Line,ResponsiveContainer,Tooltip,XAxis,YAxis} from "recharts";
-function CustomTooltip({active,payload,label,quantityLabel}){if(!active||!payload?.length)return null;const quantity=payload.find(i=>i.dataKey==="qty")?.value;const cumulative=payload.find(i=>i.dataKey==="cumulative")?.value;return <div className="rounded-xl border border-slate-500 bg-[#252a31] p-4 shadow-2xl"><p className="mb-3 font-bold">{label}</p><p className="text-sm font-black text-[#ff174f]">{quantityLabel}: {Math.round(quantity||0)}</p>{cumulative!==undefined&&<p className="mt-2 text-sm">Acumulado: {Math.trunc(cumulative)}%</p>}</div>}
-export default function ParetoChart({data,title,quantityLabel,onBarClick,activeName}){return <section className="rounded-2xl border border-slate-700 bg-[#171a1f] p-5 shadow-xl"><p className="text-[10px] font-black uppercase tracking-[.18em] text-[#ef1855]">Análise de concentração</p><h2 className="mt-1 text-xl font-black">{title}</h2>{data.length?<div className="mt-4 h-[420px] w-full"><ResponsiveContainer><ComposedChart data={data} margin={{top:20,right:22,bottom:120,left:0}}><CartesianGrid stroke="#343943" strokeDasharray="3 3" vertical={false}/><XAxis dataKey="name" interval={0} angle={-35} textAnchor="end" height={140} tick={{fontSize:10,fill:"#dbe4f0"}}/><YAxis yAxisId="qty" allowDecimals={false} tick={{fill:"#dbe4f0"}}/><YAxis yAxisId="pct" orientation="right" domain={[0,100]} tickFormatter={v=>`${v}%`} tick={{fill:"#dbe4f0"}}/><Tooltip content={<CustomTooltip quantityLabel={quantityLabel}/>}/><Bar yAxisId="qty" dataKey="qty" radius={[6,6,0,0]} onClick={entry=>onBarClick?.(entry?.name||entry?.payload?.name)}>{data.map(item=><Cell key={item.name} fill={activeName===item.name?"#f59e0b":"#d30b43"}/>)}<LabelList dataKey="qty" position="center" fill="#000" fontSize={13} fontWeight={900}/></Bar><Line yAxisId="pct" dataKey="cumulative" stroke="#f8fafc" strokeWidth={3}/><Line yAxisId="pct" dataKey="target" stroke="#f59e0b" strokeDasharray="7 6" dot={false}/></ComposedChart></ResponsiveContainer></div>:<div className="mt-4 flex h-56 items-center justify-center rounded-xl bg-[#20242a] text-slate-400">Nenhum dado disponível.</div>}</section>}
+import {
+  Bar,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  LabelList,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+function CustomTooltip({ active, payload, label, quantityLabel }) {
+  if (!active || !payload?.length) return null;
+
+  const quantity = payload.find((item) => item.dataKey === "qty")?.value;
+  const cumulative = payload.find(
+    (item) => item.dataKey === "cumulative",
+  )?.value;
+
+  return (
+    <div className="rounded-xl border border-slate-500 bg-[#252a31] p-4 shadow-2xl">
+      <p className="mb-3 font-bold">{label}</p>
+      <p className="text-sm font-black text-[#ff174f]">
+        {quantityLabel}: {Math.round(quantity || 0)}
+      </p>
+      {cumulative !== undefined && (
+        <p className="mt-2 text-sm">
+          Acumulado: {Math.trunc(cumulative)}%
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function ParetoChart({
+  data,
+  title,
+  quantityLabel,
+  onBarClick,
+  activeName,
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-700 bg-[#171a1f] p-5 shadow-xl transition-all duration-300 hover:border-slate-600 hover:shadow-2xl">
+      <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#ef1855]">
+        Análise de concentração
+      </p>
+      <h2 className="mt-1 text-xl font-black">{title}</h2>
+
+      {data.length ? (
+        <div className="mt-4 h-[420px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={data}
+              margin={{ top: 20, right: 22, bottom: 120, left: 0 }}
+            >
+              <CartesianGrid
+                stroke="#343943"
+                strokeDasharray="3 3"
+                vertical={false}
+              />
+
+              <XAxis
+                dataKey="name"
+                interval={0}
+                angle={-35}
+                textAnchor="end"
+                height={140}
+                tick={{ fontSize: 10, fill: "#dbe4f0" }}
+              />
+
+              <YAxis
+                yAxisId="qty"
+                allowDecimals={false}
+                tick={{ fill: "#dbe4f0" }}
+              />
+
+              <YAxis
+                yAxisId="pct"
+                orientation="right"
+                domain={[0, 100]}
+                tickFormatter={(value) => `${value}%`}
+                tick={{ fill: "#dbe4f0" }}
+              />
+
+              <Tooltip
+                cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                content={<CustomTooltip quantityLabel={quantityLabel} />}
+              />
+
+              <Bar
+                yAxisId="qty"
+                dataKey="qty"
+                radius={[6, 6, 0, 0]}
+                isAnimationActive={true}
+                animationBegin={80}
+                animationDuration={850}
+                animationEasing="ease-out"
+                activeBar={{
+                  stroke: "#f8fafc",
+                  strokeWidth: 2,
+                  fillOpacity: 0.92,
+                }}
+                onClick={(entry) =>
+                  onBarClick?.(entry?.name || entry?.payload?.name)
+                }
+              >
+                {data.map((item) => (
+                  <Cell
+                    key={item.name}
+                    fill={activeName === item.name ? "#f59e0b" : "#d30b43"}
+                    className="cursor-pointer transition-opacity duration-200 hover:opacity-90"
+                  />
+                ))}
+                <LabelList
+                  dataKey="qty"
+                  position="center"
+                  fill="#000000"
+                  fontSize={13}
+                  fontWeight={900}
+                />
+              </Bar>
+
+              <Line
+                yAxisId="pct"
+                dataKey="cumulative"
+                stroke="#f8fafc"
+                strokeWidth={3}
+                dot={{ r: 3, fill: "#f8fafc", strokeWidth: 0 }}
+                activeDot={{ r: 6, fill: "#f59e0b", stroke: "#ffffff" }}
+                isAnimationActive={true}
+                animationBegin={220}
+                animationDuration={950}
+                animationEasing="ease-out"
+              />
+
+              <Line
+                yAxisId="pct"
+                dataKey="target"
+                stroke="#f59e0b"
+                strokeDasharray="7 6"
+                dot={false}
+                isAnimationActive={true}
+                animationBegin={380}
+                animationDuration={650}
+                animationEasing="ease-out"
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="mt-4 flex h-56 items-center justify-center rounded-xl bg-[#20242a] text-slate-400">
+          Nenhum dado disponível.
+        </div>
+      )}
+    </section>
+  );
+}
