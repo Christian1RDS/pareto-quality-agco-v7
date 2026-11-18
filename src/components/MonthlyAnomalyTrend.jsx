@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { CalendarDays, CalendarRange, MapPin, TrendingUp } from "lucide-react";
+import { CalendarRange, MapPin, TrendingUp } from "lucide-react";
 
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const ALL_POINTS = "Todos os pontos";
@@ -26,13 +26,21 @@ const mondayOf = (date) => {
   return result;
 };
 const isoDate = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+const isoWeekNumber = (date) => {
+  const target = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  return Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+};
 
 function TooltipCard({ active, payload, label, anomaly, point, view }) {
   if (!active || !payload?.length) return null;
   const value = payload.find((item) => item.dataKey === "qty")?.value ?? 0;
   return (
     <div className="max-w-xs rounded-xl border border-slate-600 bg-[#20242a]/95 p-4 text-white shadow-2xl backdrop-blur">
-      <p className="text-xs font-black uppercase tracking-wider text-[#ef1855]">{view === "Semanal" ? `Semana de ${label}` : label}</p>
+      <p className="text-xs font-black uppercase tracking-wider text-[#ef1855]">{view === "Semanal" ? payload[0]?.payload?.label : label}</p>
+      {view === "Semanal" && payload[0]?.payload?.period && <p className="mt-1 text-[11px] text-slate-400">{payload[0].payload.period}</p>}
       <p className="mt-2 text-2xl font-black">{value}</p>
       <p className="mt-1 text-xs text-slate-300">{anomaly}</p>
       <p className="mt-1 text-xs font-bold text-amber-300">{point}</p>
@@ -71,7 +79,17 @@ export default function MonthlyAnomalyTrend({ rows, model = "Todos", region = "T
     const weeks = [];
     for (let date = new Date(firstMonday); date <= lastDay; date.setDate(date.getDate() + 7)) {
       const start = new Date(date);
-      weeks.push({ key: isoDate(start), label: formatShortDate(start), axisLabel: formatShortDate(start), qty: 0 });
+      const weekNumber = isoWeekNumber(start);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      weeks.push({
+        key: isoDate(start),
+        weekNumber,
+        label: `Semana ${weekNumber}`,
+        axisLabel: `S${weekNumber}`,
+        period: `${formatShortDate(start)} a ${formatShortDate(end)}`,
+        qty: 0,
+      });
     }
     const index = new Map(weeks.map((week, position) => [week.key, position]));
     selectedRows.forEach((row) => {
@@ -109,7 +127,7 @@ export default function MonthlyAnomalyTrend({ rows, model = "Todos", region = "T
 
       {effectiveAnomaly ? <div className="mt-6 h-[480px] w-full rounded-xl bg-[#14171c] p-3"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={data} margin={{top:30,right:24,bottom:view === "Semanal"?65:30,left:0}}><CartesianGrid stroke="#343943" strokeDasharray="3 3" vertical={false}/><XAxis dataKey="axisLabel" interval={view === "Semanal" ? 3 : 0} angle={view === "Semanal" ? -45 : 0} textAnchor={view === "Semanal" ? "end" : "middle"} height={view === "Semanal"?75:35} tick={{fill:"#dbe4f0",fontSize:11}} axisLine={{stroke:"#475569"}}/><YAxis allowDecimals={false} tick={{fill:"#dbe4f0"}} axisLine={{stroke:"#475569"}}/><Tooltip content={<TooltipCard anomaly={effectiveAnomaly} point={effectivePoint} view={view}/>} cursor={{fill:"rgba(255,255,255,0.04)"}}/><Bar dataKey="qty" fill="#d30b43" radius={[5,5,0,0]} isAnimationActive={true} animationDuration={900} animationEasing="ease-out"><LabelList dataKey="qty" position="top" fill="#f8fafc" fontSize={view === "Semanal"?9:12} fontWeight={900}/></Bar><Line type="monotone" dataKey="qty" stroke="#f8fafc" strokeWidth={3} dot={view === "Semanal"?false:{r:4,fill:"#f8fafc",strokeWidth:0}} activeDot={{r:7,fill:"#f59e0b",stroke:"#fff"}} isAnimationActive={true} animationDuration={1100}/></ComposedChart></ResponsiveContainer></div> : <div className="mt-6 flex h-72 items-center justify-center rounded-xl bg-[#20242a] text-slate-400">Nenhuma anomalia disponível.</div>}
 
-      <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/5 bg-[#20242a] p-3 text-xs text-slate-400"><TrendingUp size={16} className="mt-0.5 shrink-0 text-[#ef1855]"/>{view === "Semanal" ? "A visão semanal considera segunda-feira como início da semana. Semanas sem registro aparecem com zero." : "A visão mensal considera janeiro a dezembro. Meses sem registro aparecem com zero."} O ponto filtra somente a anomalia selecionada.</div>
+      <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/5 bg-[#20242a] p-3 text-xs text-slate-400"><TrendingUp size={16} className="mt-0.5 shrink-0 text-[#ef1855]"/>{view === "Semanal" ? "A visão semanal usa a numeração ISO do ano: Semana 1, Semana 2 e assim por diante, com segunda-feira como início. Semanas sem registro aparecem com zero." : "A visão mensal considera janeiro a dezembro. Meses sem registro aparecem com zero."} O ponto filtra somente a anomalia selecionada.</div>
     </section>
   );
 }
